@@ -389,71 +389,52 @@ function loadConfig(){
         localStorage.getItem("token") || "";
 }
 
-// GitHubへ保存
 async function saveToGist(){
 
-    saveConfig();
-
     const gistId = document.getElementById("gistId").value.trim();
-    const token = document.getElementById("token").value.trim();
+    const token  = document.getElementById("token").value.trim();
 
     if(!gistId || !token){
         alert("Gist ID と Token を入力してください");
         return;
     }
 
-    const body = {
-        files:{
-            "money.json":{
-                content: JSON.stringify({
-                    balance:Number(document.getElementById("balance").value),
-                    months:months
-                },null,2)
-            }
-        }
+    const data = {
+        balance: Number(document.getElementById("balance").value),
+        months: months
     };
 
-    const res = await fetch(`https://api.github.com/gists/${gistId}`,{
-        method:"PATCH",
-        headers:{
-            "Authorization":"Bearer "+token,
-            "Accept":"application/vnd.github+json"
-        },
-        body:JSON.stringify(body)
-    });
+    try{
 
-    if(res.ok){
-        alert("✅ GitHubへ保存しました");
-    }else{
-        alert("保存失敗：" + res.status);
+        const res = await fetch(`https://api.github.com/gists/${gistId}`,{
+            method:"PATCH",
+            headers:{
+                "Authorization":`Bearer ${token}`,
+                "Accept":"application/vnd.github+json",
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify({
+                files:{
+                    "money.json":{
+                        content: JSON.stringify(data,null,2)
+                    }
+                }
+            })
+        });
+
+        const text = await res.text();
+        console.log(res.status, text);
+
+        if(res.ok){
+            alert("✅ GitHubへ保存しました！");
+        }else{
+            alert(`保存失敗 (${res.status})\n\n${text}`);
+        }
+
+    }catch(err){
+        alert("通信エラー\n\n"+err.message);
     }
 }
-
-// GitHubから読込
-async function loadFromGist(){
-
-    saveConfig();
-
-    const gistId = document.getElementById("gistId").value.trim();
-
-    if(!gistId){
-        alert("Gist IDを入力してください");
-        return;
-    }
-
-    const res = await fetch(`https://api.github.com/gists/${gistId}`);
-    const data = await res.json();
-
-    const json = JSON.parse(data.files["money.json"].content);
-
-    document.getElementById("balance").value = json.balance;
-    months = json.months;
-
-    render();
-
-    alert("📥 GitHubから読み込みました");
-}
-    
 document.getElementById("balance").oninput=()=>{
     calculate();
     saveData();
