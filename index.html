@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>実質所持金シミュレーター</title>
+
+<style>
+body{
+    font-family: sans-serif;
+    background:#f4f6f8;
+    margin:20px;
+}
+.container{
+    max-width:900px;
+    margin:auto;
+}
+.card{
+    background:white;
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+h1{margin-top:0;}
+h2{margin:0;}
+.row{
+    display:flex;
+    gap:8px;
+    margin:6px 0;
+}
+input{
+    padding:8px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+.name{flex:1;}
+.amount{width:120px;}
+button{
+    border:none;
+    border-radius:8px;
+    padding:8px 12px;
+    cursor:pointer;
+}
+.add{background:#2563eb;color:white;}
+.delete{background:#ef4444;color:white;}
+.monthBtn{background:#16a34a;color:white;}
+.summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:10px;
+}
+.box{
+    background:#eef4ff;
+    border-radius:10px;
+    padding:10px;
+}
+.total{
+    font-size:22px;
+    font-weight:bold;
+}
+.apply{
+    background:#f59e0b;
+    color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+<h1>💰 実質所持金シミュレーター</h1>
+
+<label>現在の口座残高（円）</label><br>
+<input id="balance" type="number" value="47000">
+
+<button class="add" onclick="calculate()">再計算</button>
+<button class="apply" onclick="undo()">↶ 1つ戻る</button>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div id="months"></div>
+
+<div style="display:flex; gap:10px; margin-top:15px;">
+    <button class="monthBtn" onclick="addMonth()">＋ 月を追加</button>
+</div>
+
+</div>
+
+<script>
+let months=[
+{
+name:"9月",
+items:[
+["ETC",-3000],
+["苫小牧日当",10000],
+["苫小牧往路",10000],
+["東芝食費",5000],
+["夏学",23000],
+["JR",7000],
+["9/25給与",84000]
+]
+},
+{
+name:"10月",
+items:[
+["ETC",-3000],
+["VISA",-142000],
+["京葉",-50000],
+["学生",-10000],
+["10/23給与",37000]
+]
+},
+{
+name:"11月",
+items:[
+["VISA",-196000],
+["ゆず庵",-8000],
+["定期代",43000],
+["Airbnb",52000],
+["焼肉",65000]
+]
+}
+];
+
+let history = [];
+
+
+
+function format(y){
+return "¥"+Number(y).toLocaleString("ja-JP");
+}
+
+function saveHistory(){
+
+    history.push({
+        balance: Number(document.getElementById("balance").value),
+        months: JSON.parse(JSON.stringify(months))
+    });
+
+    // 履歴は20件まで
+    if(history.length > 20){
+        history.shift();
+    }
+}
+
+function undo(){
+
+    if(history.length === 0){
+        alert("戻れる操作はありません");
+        return;
+    }
+
+    const last = history.pop();
+
+    document.getElementById("balance").value = last.balance;
+    months = last.months;
+
+    render();
+}
+
+function render(){
+
+const area=document.getElementById("months");
+area.innerHTML="";
+
+months.forEach((m,mi)=>{
+
+const card=document.createElement("div");
+card.className="card";
+
+card.innerHTML=`
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h2 contenteditable="true">${m.name}</h2>
+<button class="delete">月削除</button>
+</div>
+
+<div id="list${mi}"></div>
+
+<button class="add">＋項目追加</button>
+
+<hr>
+
+<b>月収支：
+<span id="monthTotal${mi}"></span></b>
+`;
+
+const title=card.querySelector("h2");
+title.oninput=()=>{
+m.name=title.innerText;
+
+
+calculate();
+};
+
+card.querySelector(".delete").onclick=()=>{
+
+    saveHistory();
+
+    months.splice(mi,1);
+
+    render();
+};
+
+card.querySelector(".add").onclick=()=>{
+
+    saveHistory();
+
+    m.items.push(["",0]);
+
+    render();
+};
+
+const list=card.querySelector(`#list${mi}`);
+
+m.items.forEach((it,ii)=>{
+
+const row=document.createElement("div");
+row.className="row";
+
+row.innerHTML = `
+<input class="name" value="${it[0]}" placeholder="項目名">
+<input class="amount" type="number" value="${it[1]}">
+<button class="apply">反映</button>
+<button class="delete">✕</button>
+`;
+
+const inputs=row.querySelectorAll("input");
+
+inputs[0].oninput=e=>{
+it[0]=e.target.value;
+};
+
+inputs[1].oninput=e=>{
+it[1]=Number(e.target.value)||0;
+calculate();
+};
+// 反映ボタン
+row.querySelector(".apply").onclick = () => {
+
+    saveHistory();
+
+    // 現在残高を更新
+    const balanceInput = document.getElementById("balance");
+    balanceInput.value =
+        Number(balanceInput.value) + Number(it[1]);
+
+    // 項目を削除
+    m.items.splice(ii,1);
+
+    // 再描画
+    render();
+};
+
+
+
+row.querySelector(".delete").onclick = () => {
+
+    saveHistory();   // ←追加
+
+    m.items.splice(ii,1);
+    render();
+};
+
+list.appendChild(row);
+
+});
+
+area.appendChild(card);
+
+});
+
+
+
+calculate();
+
+}
+
+function calculate(){
+
+let bal=Number(document.getElementById("balance").value)||0;
+
+const sum=document.getElementById("summary");
+sum.innerHTML="";
+
+const first=document.createElement("div");
+first.className="box";
+first.innerHTML=`<div>現在</div>
+<div class="total">${format(bal)}</div>`;
+sum.appendChild(first);
+
+months.forEach((m,mi)=>{
+
+const monthTotal=m.items.reduce((a,b)=>a+Number(b[1]),0);
+
+const label=document.getElementById(`monthTotal${mi}`);
+if(label){
+label.textContent=format(monthTotal);
+label.style.color=monthTotal>=0?"green":"red";
+}
+
+bal+=monthTotal;
+
+const box=document.createElement("div");
+box.className="box";
+box.innerHTML=`
+<div>${m.name}末</div>
+<div class="total">${format(bal)}</div>
+`;
+sum.appendChild(box);
+
+});
+
+}
+
+function addMonth(){
+
+saveHistory();
+
+    // 最後の月名から数字を取得（例: "12月" → 12）
+    const lastMonth = parseInt(months[months.length-1].name);
+
+    // 12の次は1、それ以外は+1
+    const next = lastMonth === 12 ? 1 : lastMonth + 1;
+
+    months.push({
+        name:`${next}月`,
+        items:[]
+    });
+
+
+render();
+
+}
+
+document.getElementById("balance").oninput=calculate;
+
+render();
+
+</script>
+
+</body>
+</html>
