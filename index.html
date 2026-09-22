@@ -424,7 +424,7 @@ async function saveToGist(){
 
         const text = await res.text();
         console.log(res.status, text);
-
+　　　　  console.log(`https://api.github.com/gists/${gistId}`);
         if(res.ok){
             alert("✅ GitHubへ保存しました！");
         }else{
