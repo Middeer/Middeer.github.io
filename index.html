@@ -391,6 +391,8 @@ function loadConfig(){
 
 async function saveToGist(){
 
+    saveConfig();
+
     const gistId = document.getElementById("gistId").value.trim();
     const token  = document.getElementById("token").value.trim();
 
@@ -435,6 +437,32 @@ async function saveToGist(){
         alert("通信エラー\n\n"+err.message);
     }
 }
+
+// GitHubから読込
+async function loadFromGist(){
+
+    saveConfig();   // ← これを先頭に追加
+
+    const gistId = document.getElementById("gistId").value.trim();
+
+    if(!gistId){
+        alert("Gist IDを入力してください");
+        return;
+    }
+
+    const res = await fetch(`https://api.github.com/gists/${gistId}`);
+    const data = await res.json();
+
+    const json = JSON.parse(data.files["money.json"].content);
+
+    document.getElementById("balance").value = json.balance;
+    months = json.months;
+
+    render();
+
+    alert("📥 GitHubから読み込みました");
+}
+    
 document.getElementById("balance").oninput=()=>{
     calculate();
     saveData();
