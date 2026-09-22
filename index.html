@@ -374,10 +374,85 @@ render();
 }
 
 // ---------- GitHub同期 ----------
-function saveConfig(){ ... }
-function loadConfig(){ ... }
-async function saveToGist(){ ... }
-async function loadFromGist(){ ... }
+
+// TokenとGist IDを端末保存
+function saveConfig(){
+    localStorage.setItem("gistId",document.getElementById("gistId").value);
+    localStorage.setItem("token",document.getElementById("token").value);
+}
+
+function loadConfig(){
+    document.getElementById("gistId").value =
+        localStorage.getItem("gistId") || "";
+
+    document.getElementById("token").value =
+        localStorage.getItem("token") || "";
+}
+
+// GitHubへ保存
+async function saveToGist(){
+
+    saveConfig();
+
+    const gistId = document.getElementById("gistId").value.trim();
+    const token = document.getElementById("token").value.trim();
+
+    if(!gistId || !token){
+        alert("Gist ID と Token を入力してください");
+        return;
+    }
+
+    const body = {
+        files:{
+            "money.json":{
+                content: JSON.stringify({
+                    balance:Number(document.getElementById("balance").value),
+                    months:months
+                },null,2)
+            }
+        }
+    };
+
+    const res = await fetch(`https://api.github.com/gists/${gistId}`,{
+        method:"PATCH",
+        headers:{
+            "Authorization":"Bearer "+token,
+            "Accept":"application/vnd.github+json"
+        },
+        body:JSON.stringify(body)
+    });
+
+    if(res.ok){
+        alert("✅ GitHubへ保存しました");
+    }else{
+        alert("保存失敗：" + res.status);
+    }
+}
+
+// GitHubから読込
+async function loadFromGist(){
+
+    saveConfig();
+
+    const gistId = document.getElementById("gistId").value.trim();
+
+    if(!gistId){
+        alert("Gist IDを入力してください");
+        return;
+    }
+
+    const res = await fetch(`https://api.github.com/gists/${gistId}`);
+    const data = await res.json();
+
+    const json = JSON.parse(data.files["money.json"].content);
+
+    document.getElementById("balance").value = json.balance;
+    months = json.months;
+
+    render();
+
+    alert("📥 GitHubから読み込みました");
+}
     
 document.getElementById("balance").oninput=()=>{
     calculate();
