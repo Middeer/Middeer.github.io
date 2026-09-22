@@ -128,7 +128,30 @@ items:[
 
 let history = [];
 
+function loadData(){
 
+    const saved = localStorage.getItem("moneySimulator");
+
+    if(!saved) return;
+
+    const data = JSON.parse(saved);
+
+    document.getElementById("balance").value = data.balance;
+    months = data.months || [];
+}
+
+function saveData(){
+
+    const data = {
+        balance: Number(document.getElementById("balance").value),
+        months: months
+    };
+
+    localStorage.setItem(
+        "moneySimulator",
+        JSON.stringify(data)
+    );
+}
 
 function format(y){
 return "¥"+Number(y).toLocaleString("ja-JP");
@@ -194,6 +217,7 @@ m.name=title.innerText;
 
 
 calculate();
+saveData();
 };
 
 card.querySelector(".delete").onclick=()=>{
@@ -336,8 +360,12 @@ render();
 
 }
 
-document.getElementById("balance").oninput=calculate;
+document.getElementById("balance").oninput=()=>{
+    calculate();
+    saveData();
+};
 
+loadData();
 render();
 
 </script>
