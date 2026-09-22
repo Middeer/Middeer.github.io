@@ -78,6 +78,19 @@ button{
 
 <button class="add" onclick="calculate()">再計算</button>
 <button class="apply" onclick="undo()">↶ 1つ戻る</button>
+    
+    <hr>
+
+<label>GitHub Gist ID</label>
+<input id="gistId" placeholder="Gist ID">
+
+<label style="margin-top:10px;display:block;">GitHub Token</label>
+<input id="token" type="password" placeholder="github_pat_...">
+
+<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+    <button class="add" onclick="saveToGist()">☁️ GitHub保存</button>
+    <button class="monthBtn" onclick="loadFromGist()">☁️ GitHub読込</button>
+</div>
 </div>
 
 <div class="summary" id="summary"></div>
@@ -360,6 +373,12 @@ render();
 
 }
 
+// ---------- GitHub同期 ----------
+function saveConfig(){ ... }
+function loadConfig(){ ... }
+async function saveToGist(){ ... }
+async function loadFromGist(){ ... }
+    
 document.getElementById("balance").oninput=()=>{
     calculate();
     saveData();
@@ -367,7 +386,8 @@ document.getElementById("balance").oninput=()=>{
 
 loadData();
 render();
-
+loadConfig();
+    
 </script>
 
 </body>
